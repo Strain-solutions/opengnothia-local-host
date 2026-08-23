@@ -1,8 +1,27 @@
+import { fetch } from "@tauri-apps/plugin-http";
 import type { AIProvider, ChatMessage, ThinkingLevel, ThinkingType, TokenUsage } from "@/types";
 import { getAdapter } from "./providers";
 import { getCurrentLanguage, getTranslation } from "@/i18n";
 import { TEST_MESSAGE, TEST_SYSTEM_PROMPT } from "./promptBuilder";
 import { AIError } from "./AIError";
+
+/**
+ * AI requests go through tauri-plugin-http (Rust) rather than the webview's fetch.
+ * This bypasses CORS entirely, which is what lets a local Ollama server work with no
+ * OLLAMA_ORIGINS configuration and no restart. Allowed hosts are scoped in
+ * src-tauri/capabilities/default.json.
+ *
+ * Consequence: the plugin does not signal cancellation the way the browser does. Instead of a
+ * DOMException named "AbortError" it throws `new Error("Request cancelled")`, and the stream
+ * controller is errored with that same value as a *raw string*. Both must be recognised here,
+ * or pressing stop shows the user a spurious error.
+ */
+function isAbortError(err: unknown): boolean {
+  if (err instanceof DOMException && err.name === "AbortError") return true;
+  if (typeof err === "string") return err === "Request cancelled";
+  if (err instanceof Error) return err.message === "Request cancelled";
+  return false;
+}
 
 export async function sendMessage(params: {
   provider: AIProvider;
@@ -161,7 +180,7 @@ export async function streamMessage(params: {
     }
     params.onDone();
   } catch (err) {
-    if (err instanceof DOMException && err.name === "AbortError") {
+    if (isAbortError(err)) {
       // User cancelled — don't call onError
       return;
     }

@@ -51,6 +51,40 @@ export function getErrorDisplayInfo(
   const details = buildErrorDetails(error);
   const base = (info: Omit<ErrorDisplayInfo, "details">): ErrorDisplayInfo => ({ ...info, details });
 
+  // A local provider fails in ways the cloud copy doesn't describe: the server may simply not
+  // be running, or the URL may be rejected by the tauri-plugin-http scope before any request
+  // leaves the app. Both surface with no status code, so they'd otherwise read as a generic
+  // "API error" telling the user to check a balance they don't have.
+  if (provider === "local") {
+    const raw = `${error instanceof Error ? error.message : ""} ${
+      error instanceof AIError ? error.rawBody ?? "" : ""
+    }`.toLowerCase();
+
+    if (statusCode === undefined) {
+      // Observed wording from tauri-plugin-http:
+      //   "url not allowed on the configured scope: https://example.com/"
+      // The looser checks stay as a hedge in case the plugin rewords it.
+      const scopeRejected =
+        raw.includes("not allowed on the configured scope") ||
+        raw.includes("not allowed") ||
+        raw.includes("scope");
+      return base({
+        title: scopeRejected ? t.errors.localUrlNotAllowedTitle : t.errors.localNotRunningTitle,
+        message: scopeRejected
+          ? t.errors.localUrlNotAllowedMessage
+          : t.errors.localNotRunningMessage,
+        showSettingsLink: true,
+      });
+    }
+    if (statusCode === 404) {
+      return base({
+        title: t.errors.localModelNotFoundTitle,
+        message: t.errors.localModelNotFoundMessage,
+        showSettingsLink: true,
+      });
+    }
+  }
+
   if (statusCode === undefined) {
     return base({
       title: t.errors.unknownStatusTitle,

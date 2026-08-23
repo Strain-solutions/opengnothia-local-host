@@ -31,7 +31,7 @@ import {
   COURSE_LESSON_TRIGGER,
 } from "@/services/ai/coursePromptBuilder";
 import { updateCourseNotes } from "@/services/ai/courseNotes";
-import { getProvider } from "@/constants/providers";
+import { resolveContextWindow } from "@/constants/providers";
 import { getCourseStepDescription } from "@/constants/courseStepDescriptions";
 import { ChatContainer } from "@/components/chat/ChatContainer";
 import { ChatInput } from "@/components/chat/ChatInput";
@@ -1344,9 +1344,7 @@ function LessonView({
       }
 
       // Check compaction
-      const providerConfig = getProvider(settings.provider);
-      const modelConfig = providerConfig?.models.find((m) => m.id === settings.model);
-      const ctxWindow = modelConfig?.contextWindow ?? 0;
+      const ctxWindow = resolveContextWindow(settings.provider, settings.model, settings.customContextWindow);
       const { currentInputTokens } = useCourseStore.getState();
       if (ctxWindow > 0 && currentInputTokens >= ctxWindow * 0.8) {
         await performCompaction();

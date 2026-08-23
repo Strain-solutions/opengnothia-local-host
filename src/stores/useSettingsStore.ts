@@ -8,6 +8,8 @@ interface SettingsState {
   apiKey: string;
   model: string;
   customBaseUrl: string;
+  /** Context window for user-entered models (local/OpenAI-compatible), which aren't in the static model table. */
+  customContextWindow: number;
   approach: Approach;
   preferredSessionTime: string;
   sessionDurationMinutes: number;
@@ -31,6 +33,7 @@ interface SettingsState {
   setApiKey: (key: string) => void;
   setModel: (model: string) => void;
   setCustomBaseUrl: (url: string) => void;
+  setCustomContextWindow: (tokens: number) => void;
   setApproach: (approach: Approach) => void;
   setPreferredSessionTime: (time: string) => void;
   setSessionDurationMinutes: (minutes: number) => void;
@@ -55,6 +58,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   apiKey: "",
   model: DEFAULT_MODEL_ID,
   customBaseUrl: "",
+  customContextWindow: 8192,
   approach: "balanced",
   preferredSessionTime: "20:00",
   sessionDurationMinutes: 50,
@@ -101,12 +105,17 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     const restoredMemoryLevel = restoredMemory.level;
     const restoredMemoryType = provider === "openai" ? "budget" as ThinkingType : (restoredMemory.type ?? "budget" as ThinkingType);
 
-    // Reset models to new provider's first model
+    // Reset models to new provider's first model.
+    // Providers with an empty model list (local / OpenAI-compatible) take free text instead,
+    // so blank them rather than carrying the previous provider's model name across.
     const newProvider = getProvider(provider);
-    const newModel = newProvider?.models[0]?.id ?? state.model;
-    const newMemoryModel = provider === DEFAULT_PROVIDER_ID
-      ? DEFAULT_MEMORY_MODEL_ID
-      : newProvider?.models[0]?.id ?? state.memoryModel;
+    const usesCustomModels = newProvider !== undefined && newProvider.models.length === 0;
+    const newModel = usesCustomModels ? "" : newProvider?.models[0]?.id ?? state.model;
+    const newMemoryModel = usesCustomModels
+      ? ""
+      : provider === DEFAULT_PROVIDER_ID
+        ? DEFAULT_MEMORY_MODEL_ID
+        : newProvider?.models[0]?.id ?? state.memoryModel;
 
     set({
       provider,
@@ -133,6 +142,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
   setModel: (model) => set({ model }),
   setCustomBaseUrl: (customBaseUrl) => set({ customBaseUrl }),
+  setCustomContextWindow: (customContextWindow) => set({ customContextWindow }),
   setApproach: (approach) => set({ approach }),
   setPreferredSessionTime: (preferredSessionTime) => set({ preferredSessionTime }),
   setSessionDurationMinutes: (sessionDurationMinutes) => set({ sessionDurationMinutes }),

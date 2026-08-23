@@ -21,6 +21,7 @@ import {
   RECOMMENDED_MODEL_ID,
   providers,
   getProvider,
+  providerUsesCustomModels,
   modelSupportsThinking,
   modelSupportsAdaptiveThinking,
   modelRequiresAdaptiveThinking,
@@ -31,6 +32,7 @@ import { Modal } from "@/components/ui/Modal";
 import { invoke } from "@tauri-apps/api/core";
 import { generateSalt, hashPassword, verifyPassword } from "@/lib/security";
 import { synthesizeSpeech, playAudioBlob } from "@/services/ai/ttsService";
+import { testApiKey } from "@/services/ai/aiService";
 import {
   exportAllData,
   saveExportToFile,
@@ -49,6 +51,8 @@ export default function SettingsPage() {
   const { t } = useTranslation();
   const [saved, setSaved] = useState(false);
   const [apiKeyFocused, setApiKeyFocused] = useState(false);
+  const [connStatus, setConnStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [connError, setConnError] = useState("");
   const [profileName, setProfileName] = useState("");
   const [profileAge, setProfileAge] = useState("");
   const [profileGender, setProfileGender] = useState("");
@@ -121,6 +125,11 @@ export default function SettingsPage() {
 
   const currentProvider = getProvider(settings.provider);
   const providerOptions = providers.map((p) => ({ value: p.id, label: p.name }));
+  // Providers with an empty model table take free-text model names and need a base URL
+  // and a manually-declared context window (nothing in the static table to read them from).
+  const usesCustomModels = providerUsesCustomModels(settings.provider);
+  const effectiveBaseUrl = settings.customBaseUrl || currentProvider?.baseUrl || "";
+  const isLoopbackUrl = /^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(effectiveBaseUrl);
   const modelOptions = currentProvider?.models.map((m) => ({
     value: m.id,
     label: m.id === RECOMMENDED_MODEL_ID ? `${m.name} (${t.settings.recommended})` : m.name,
@@ -136,6 +145,23 @@ export default function SettingsPage() {
   const showAdaptiveOption = modelSupportsAdaptiveThinking(settings.provider, settings.model) && !chatRequiresAdaptive;
   const showMemoryAdaptiveOption = modelSupportsAdaptiveThinking(settings.provider, settings.memoryModel) && !memoryRequiresAdaptive;
 
+  async function handleTestConnection() {
+    setConnStatus("loading");
+    setConnError("");
+    const result = await testApiKey({
+      provider: settings.provider,
+      apiKey: settings.apiKey,
+      model: settings.model,
+      customBaseUrl: settings.customBaseUrl || undefined,
+    });
+    if (result.success) {
+      setConnStatus("success");
+    } else {
+      setConnStatus("error");
+      setConnError(result.error ?? "");
+    }
+  }
+
   async function handleSave() {
     const store = await loadSettings();
     await store.set("language", settings.language);
@@ -143,6 +169,8 @@ export default function SettingsPage() {
     await store.set("apiKey", settings.apiKey);
     await store.set("providerApiKeys", settings.providerApiKeys);
     await store.set("model", settings.model);
+    await store.set("customBaseUrl", settings.customBaseUrl);
+    await store.set("customContextWindow", settings.customContextWindow);
     await store.set("theme", theme);
     await store.set("thinkingEnabled", settings.thinkingEnabled);
     await store.set("thinkingLevel", settings.thinkingLevel);
@@ -316,6 +344,7 @@ export default function SettingsPage() {
     await store.set("providerApiKeys", {});
     await store.set("model", DEFAULT_MODEL_ID);
     await store.set("customBaseUrl", "");
+    await store.set("customContextWindow", 8192);
     await store.set("language", "tr");
     await store.set("therapySchool", RECOMMENDED_SCHOOL_ID);
     await store.set("thinkingEnabled", true);
@@ -348,6 +377,7 @@ export default function SettingsPage() {
       providerApiKeys: {},
       model: DEFAULT_MODEL_ID,
       customBaseUrl: "",
+      customContextWindow: 8192,
       therapySchool: RECOMMENDED_SCHOOL_ID as TherapySchool,
       thinkingEnabled: true,
       thinkingLevel: "medium" as ThinkingLevel,
@@ -529,6 +559,54 @@ export default function SettingsPage() {
               onBlur={() => setApiKeyFocused(false)}
             />
           )}
+
+          {usesCustomModels && (
+            <>
+              <div>
+                <Input
+                  label={t.settings.baseUrl}
+                  value={settings.customBaseUrl}
+                  placeholder={currentProvider?.baseUrl}
+                  onChange={(e) => {
+                    settings.setCustomBaseUrl(e.target.value);
+                    setConnStatus("idle");
+                  }}
+                />
+                <p className="text-xs text-[var(--text-muted)] mt-1">
+                  {t.settings.baseUrlDescription}
+                </p>
+                {/* Only claim privacy when the endpoint really is on this machine. */}
+                {isLoopbackUrl && (
+                  <p className="text-xs text-green-600 dark:text-green-500 mt-1">
+                    {t.settings.localPrivacyNote}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="secondary"
+                  onClick={handleTestConnection}
+                  disabled={connStatus === "loading" || !settings.model}
+                >
+                  {connStatus === "loading" && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {t.settings.testConnection}
+                </Button>
+                {connStatus === "success" && (
+                  <span className="text-xs text-green-600 dark:text-green-500 flex items-center gap-1">
+                    <CheckCircle className="w-4 h-4" />
+                    {t.settings.connectionSuccess}
+                  </span>
+                )}
+                {connStatus === "error" && (
+                  <span className="text-xs text-red-500">
+                    {t.settings.connectionFailed}
+                    {connError ? `: ${connError}` : ""}
+                  </span>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </Card>
 
@@ -557,6 +635,42 @@ export default function SettingsPage() {
                 );
               }}
             />
+          )}
+
+          {usesCustomModels && (
+            <>
+              <div>
+                <Input
+                  label={t.settings.customModelLabel}
+                  value={settings.model}
+                  placeholder={t.settings.modelNamePlaceholder}
+                  onChange={(e) => {
+                    settings.setModel(e.target.value);
+                    setConnStatus("idle");
+                  }}
+                />
+                <p className="text-xs text-[var(--text-muted)] mt-1">
+                  {t.settings.customModelDescription}
+                </p>
+              </div>
+
+              <div>
+                <Input
+                  label={t.settings.customContextWindow}
+                  type="number"
+                  min={1024}
+                  step={1024}
+                  value={settings.customContextWindow}
+                  onChange={(e) => {
+                    const parsed = Number(e.target.value);
+                    settings.setCustomContextWindow(Number.isFinite(parsed) && parsed > 0 ? parsed : 0);
+                  }}
+                />
+                <p className="text-xs text-[var(--text-muted)] mt-1">
+                  {t.settings.customContextWindowDescription}
+                </p>
+              </div>
+            </>
           )}
 
           {showThinkingToggle && (
@@ -612,6 +726,15 @@ export default function SettingsPage() {
           {t.settings.memoryModelDescription}
         </p>
         <div className="space-y-4">
+          {usesCustomModels && (
+            <Input
+              label={t.settings.customModelLabel}
+              value={settings.memoryModel}
+              placeholder={t.settings.modelNamePlaceholder}
+              onChange={(e) => settings.setMemoryModel(e.target.value)}
+            />
+          )}
+
           {modelOptions.length > 0 && (
             <Select
               label={t.settings.model}
@@ -683,6 +806,18 @@ export default function SettingsPage() {
       {/* Tab: Voice */}
       {activeTab === "voice" && (
       <div className="space-y-6">
+      {/* Voice depends on OpenAI STT/TTS, so it can't be offered under a local provider
+          without silently breaking the privacy guarantee. Say so rather than fail quietly. */}
+      {usesCustomModels && (
+        <Card>
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-sm text-[var(--text-secondary)]">
+              {t.settings.localVoiceUnavailable}
+            </p>
+          </div>
+        </Card>
+      )}
       {/* Transcript Settings */}
       <Card>
         <h2 className="font-semibold mb-2">{t.transcript.title}</h2>

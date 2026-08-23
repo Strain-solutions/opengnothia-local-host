@@ -31,7 +31,7 @@ import { takeBackgroundNotes } from "@/services/ai/backgroundNotes";
 import { createSession, updateSessionMessages, completeSession, deleteSession, getUserProfile, getTodayCheckIn, getRecentSessions, getPatientNotes, getPatientNotesUpdatedAt, getCompletedSessionCount, saveTokenUsage, getInsightGroups, createInsightGroup, createInsight, getPatientIntakeForm, intakeFormHasContent } from "@/services/db/queries";
 import { getAllSchools, getSchoolById } from "@/stores/useSchoolsStore";
 import { showToast } from "@/stores/useToastStore";
-import { providers, getProvider, modelSupportsThinking } from "@/constants/providers";
+import { providers, getProvider, modelSupportsThinking, providerUsesCustomModels, resolveContextWindow } from "@/constants/providers";
 import { ErrorModal } from "@/components/ui/ErrorModal";
 import { testTranscriptApiKey } from "@/services/ai/ttsService";
 import { Square, Loader2, FileText, Sparkles, Mic, MessageSquare, Pause, Play, Lightbulb, ChevronRight } from "lucide-react";
@@ -133,6 +133,15 @@ export default function SessionPage() {
   const chatInputRef = useRef<ChatInputHandle>(null);
   const recorder = useAudioRecorder();
   const [selectedMode, setSelectedMode] = useState<SessionMode>(settings.preferredSessionMode);
+  // STT/TTS still go to OpenAI, so voice would quietly break the "nothing leaves the device"
+  // guarantee that selecting a local provider is meant to give. Block it rather than leak audio.
+  const voiceUnavailable = providerUsesCustomModels(settings.provider);
+  // A stored preference of "voice" must not start a voice session after switching to local.
+  useEffect(() => {
+    if (voiceUnavailable && selectedMode === "voice") {
+      setSelectedMode("chat");
+    }
+  }, [voiceUnavailable, selectedMode]);
   const sendMessageRef = useRef<(text: string) => void>(() => {});
   const voiceFeedRef = useRef<(chunk: string) => void>(() => {});
   const voiceFlushRef = useRef<() => void>(() => {});
@@ -521,9 +530,7 @@ export default function SessionPage() {
       }
 
       // Check if compaction is needed
-      const providerConfig = getProvider(settings.provider);
-      const modelConfig = providerConfig?.models.find((m) => m.id === settings.model);
-      const ctxWindow = modelConfig?.contextWindow ?? 0;
+      const ctxWindow = resolveContextWindow(settings.provider, settings.model, settings.customContextWindow);
       const { currentInputTokens } = useSessionStore.getState();
       if (ctxWindow > 0 && currentInputTokens >= ctxWindow * 0.8) {
         await performCompaction();
@@ -1030,6 +1037,7 @@ export default function SessionPage() {
                 <span className="text-xs text-[var(--text-muted)] block leading-relaxed">{t.voice.chatDescription}</span>
               </button>
               <button
+                disabled={voiceUnavailable}
                 onClick={() => {
                   setSelectedMode("voice");
                   const key = useSettingsStore.getState().transcriptApiKey;
@@ -1038,9 +1046,11 @@ export default function SessionPage() {
                   }
                 }}
                 className={`relative p-4 rounded-xl border-2 text-left transition-all duration-200 ${
-                  selectedMode === "voice"
-                    ? "border-primary-500 bg-primary-500/5 shadow-[0_0_12px_-3px] shadow-primary-500/25"
-                    : "border-[var(--border-color)] hover:border-[var(--text-muted)] hover:bg-[var(--bg-secondary)]/50"
+                  voiceUnavailable
+                    ? "border-[var(--border-color)] opacity-50 cursor-not-allowed"
+                    : selectedMode === "voice"
+                      ? "border-primary-500 bg-primary-500/5 shadow-[0_0_12px_-3px] shadow-primary-500/25"
+                      : "border-[var(--border-color)] hover:border-[var(--text-muted)] hover:bg-[var(--bg-secondary)]/50"
                 }`}
               >
                 <div className="flex items-start justify-between mb-2.5">
@@ -1060,7 +1070,9 @@ export default function SessionPage() {
                   </div>
                 </div>
                 <span className="text-sm font-semibold block mb-1">{t.voice.voiceConversation}</span>
-                <span className="text-xs text-[var(--text-muted)] block leading-relaxed">{t.voice.voiceDescription}</span>
+                <span className="text-xs text-[var(--text-muted)] block leading-relaxed">
+                  {voiceUnavailable ? t.settings.localVoiceUnavailable : t.voice.voiceDescription}
+                </span>
               </button>
             </div>
           </div>
@@ -1211,7 +1223,7 @@ export default function SessionPage() {
   // Active session: chat
   const providerConfig = getProvider(settings.provider);
   const modelConfig = providerConfig?.models.find((m) => m.id === settings.model);
-  const contextWindow = modelConfig?.contextWindow ?? 0;
+  const contextWindow = resolveContextWindow(settings.provider, settings.model, settings.customContextWindow);
   const modelName = modelConfig?.name ?? settings.model;
 
   return (

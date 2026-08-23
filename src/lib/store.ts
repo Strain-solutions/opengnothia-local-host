@@ -11,6 +11,7 @@ const STORE_DEFAULTS = {
   apiKey: "",
   model: DEFAULT_MODEL_ID,
   customBaseUrl: "",
+  customContextWindow: 8192,
   theme: "system",
   therapySchool: "integrative",
   thinkingEnabled: false,

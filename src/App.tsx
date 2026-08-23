@@ -53,6 +53,7 @@ function AppContent() {
         const apiKey = await store.get<string>("apiKey");
         const model = await store.get<string>("model");
         const customBaseUrl = await store.get<string>("customBaseUrl");
+        const customContextWindow = await store.get<number>("customContextWindow");
         const therapySchool = await store.get<string>("therapySchool");
         const thinkingEnabled = await store.get<boolean>("thinkingEnabled");
         const thinkingLevel = await store.get<string>("thinkingLevel");
@@ -112,6 +113,7 @@ function AppContent() {
           ...(apiKey && { apiKey }),
           ...(model && { model }),
           ...(customBaseUrl && { customBaseUrl }),
+          ...(customContextWindow != null && { customContextWindow }),
           ...(therapySchool && { therapySchool: therapySchool as any }),
           ...(thinkingEnabled != null && { thinkingEnabled }),
           ...(thinkingLevel && { thinkingLevel: thinkingLevel as any }),

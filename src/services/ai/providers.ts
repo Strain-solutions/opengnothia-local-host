@@ -70,6 +70,8 @@ interface ProviderAdapter {
   parseSSEEvent(eventType: string, data: string): StreamChunk | StreamChunk[] | null;
 }
 
+const DEFAULT_ANTHROPIC_BASE_URL = "https://api.anthropic.com/v1";
+
 function isReasoningModel(model: string): boolean {
   return /^o\d/.test(model) || /^gpt-5/.test(model);
 }
@@ -273,7 +275,8 @@ const openaiAdapter: ProviderAdapter = {
 };
 
 const anthropicAdapter: ProviderAdapter = {
-  formatRequest({ apiKey, model, messages, systemPrompt, maxTokens, thinkingEnabled, thinkingLevel, thinkingType }) {
+  formatRequest({ apiKey, model, messages, systemPrompt, customBaseUrl, maxTokens, thinkingEnabled, thinkingLevel, thinkingType }) {
+    const baseUrl = customBaseUrl || DEFAULT_ANTHROPIC_BASE_URL;
     const body: Record<string, unknown> = {
       model,
       system: systemPrompt,
@@ -295,14 +298,13 @@ const anthropicAdapter: ProviderAdapter = {
       body.max_tokens = maxTokens || 8192;
     }
     return {
-      url: "https://api.anthropic.com/v1/messages",
+      url: `${baseUrl}/messages`,
       init: {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-api-key": apiKey,
           "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-access": "true",
         },
         body: JSON.stringify(body),
       },
@@ -319,7 +321,8 @@ const anthropicAdapter: ProviderAdapter = {
       : null;
     return { content, usage };
   },
-  formatStreamRequest({ apiKey, model, messages, systemPrompt, thinkingEnabled, thinkingLevel, thinkingType }) {
+  formatStreamRequest({ apiKey, model, messages, systemPrompt, customBaseUrl, thinkingEnabled, thinkingLevel, thinkingType }) {
+    const baseUrl = customBaseUrl || DEFAULT_ANTHROPIC_BASE_URL;
     const body: Record<string, unknown> = {
       model,
       stream: true,
@@ -343,14 +346,13 @@ const anthropicAdapter: ProviderAdapter = {
       body.max_tokens = 8192;
     }
     return {
-      url: "https://api.anthropic.com/v1/messages",
+      url: `${baseUrl}/messages`,
       init: {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-api-key": apiKey,
           "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-access": "true",
         },
         body: JSON.stringify(body),
       },
@@ -406,9 +408,112 @@ const anthropicAdapter: ProviderAdapter = {
   },
 };
 
+export const DEFAULT_LOCAL_BASE_URL = "http://localhost:11434/v1";
+
+/**
+ * Local / OpenAI-compatible endpoints (Ollama, opencode, LM Studio, llama.cpp, vLLM).
+ *
+ * Reuses the OpenAI Chat Completions shape, with three deliberate differences:
+ *  - Never routes to the OpenAI Responses API. `isReasoningModel()` matches on model-name
+ *    patterns, and a local server is free to serve a model literally named e.g. "gpt-5-foo";
+ *    sending that to `/responses` would fail, so the reasoning path is forced off.
+ *  - Defaults to the Ollama base URL rather than api.openai.com.
+ *  - Understands `delta.reasoning`, which Ollama's /v1 shim uses to stream reasoning tokens
+ *    for models like qwen3. It is not inline `<think>` tags and not `reasoning_content`;
+ *    without this the reasoning is silently dropped and the user watches an empty bubble.
+ */
+const localAdapter: ProviderAdapter = {
+  formatRequest({ apiKey, model, messages, systemPrompt, customBaseUrl, maxTokens }) {
+    const baseUrl = customBaseUrl || DEFAULT_LOCAL_BASE_URL;
+    const body: Record<string, unknown> = {
+      model,
+      temperature: 0.7,
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...messages.map((m) => ({ role: m.role, content: m.content })),
+      ],
+    };
+    if (maxTokens) body.max_tokens = maxTokens;
+    return {
+      url: `${baseUrl}/chat/completions`,
+      init: {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // Ollama ignores the value but some OpenAI-compatible shims require the header.
+          Authorization: `Bearer ${apiKey || "local"}`,
+        },
+        body: JSON.stringify(body),
+      },
+    };
+  },
+  parseResponse: openaiAdapter.parseResponse,
+  formatStreamRequest({ apiKey, model, messages, systemPrompt, customBaseUrl }) {
+    const baseUrl = customBaseUrl || DEFAULT_LOCAL_BASE_URL;
+    const body: Record<string, unknown> = {
+      model,
+      stream: true,
+      temperature: 0.7,
+      // Verified against Ollama: yields a final {"choices":[],"usage":{...}} chunk,
+      // which keeps the context gauge and auto-compaction working.
+      stream_options: { include_usage: true },
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...messages.map((m) => ({ role: m.role, content: m.content })),
+      ],
+    };
+    return {
+      url: `${baseUrl}/chat/completions`,
+      init: {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey || "local"}`,
+        },
+        body: JSON.stringify(body),
+      },
+    };
+  },
+  parseSSEEvent(_eventType: string, data: string): StreamChunk | StreamChunk[] | null {
+    if (data === "[DONE]") return { type: "done" };
+    let parsed: any;
+    try {
+      parsed = JSON.parse(data);
+    } catch {
+      return null;
+    }
+
+    // Final usage chunk carries an empty `choices` array.
+    if (parsed.usage && (!parsed.choices || parsed.choices.length === 0)) {
+      return {
+        type: "done_with_usage",
+        usage: {
+          inputTokens: parsed.usage.prompt_tokens,
+          outputTokens: parsed.usage.completion_tokens,
+        },
+      };
+    }
+
+    const delta = parsed.choices?.[0]?.delta;
+    if (!delta) return null;
+    if (typeof delta.reasoning === "string" && delta.reasoning.length > 0) {
+      return { type: "thinking", content: delta.reasoning };
+    }
+    // Some shims follow the older convention instead.
+    if (typeof delta.reasoning_content === "string" && delta.reasoning_content.length > 0) {
+      return { type: "thinking", content: delta.reasoning_content };
+    }
+    if (delta.content) {
+      return { type: "text", content: delta.content };
+    }
+    return null;
+  },
+};
+
 const adapters: Record<AIProvider, ProviderAdapter> = {
   openai: openaiAdapter,
   anthropic: anthropicAdapter,
+  local: localAdapter,
 };
 
 export function getAdapter(provider: AIProvider): ProviderAdapter {

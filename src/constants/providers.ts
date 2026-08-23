@@ -288,7 +288,44 @@ export const providers: AIProviderConfig[] = [
 
     ],
   },
+  {
+    id: "local",
+    name: "Local (Ollama / OpenAI-compatible)",
+    description: "Runs on your machine — nothing leaves the device",
+    // Ollama's OpenAI-compatible shim. Also works for opencode, LM Studio, llama.cpp, vLLM.
+    baseUrl: "http://localhost:11434/v1",
+    requiresKey: false,
+    // Empty on purpose: local model names are arbitrary, so the UI takes free text
+    // instead of a dropdown, and the thinking/cost helpers below all fall through
+    // to their "unknown model" defaults.
+    models: [],
+  },
 ];
+
+/** Providers whose model list is user-entered rather than picked from a fixed table. */
+export function providerUsesCustomModels(id: string): boolean {
+  const provider = getProvider(id);
+  return provider !== undefined && provider.models.length === 0;
+}
+
+/**
+ * Context window for the active model, in tokens. Returns 0 when unknown.
+ *
+ * User-entered models aren't in the static table, so they fall back to the value the user
+ * declared in Settings. Without this the callers see 0, which disables both the context gauge
+ * and — more seriously — the auto-compaction trigger, letting a long session silently overflow
+ * and lose its earliest turns.
+ */
+export function resolveContextWindow(
+  providerId: string,
+  modelId: string,
+  customContextWindow: number,
+): number {
+  const model = getProvider(providerId)?.models.find((m) => m.id === modelId);
+  if (model) return model.contextWindow;
+  if (providerUsesCustomModels(providerId)) return customContextWindow > 0 ? customContextWindow : 0;
+  return 0;
+}
 
 export function getProvider(id: string) {
   return providers.find((p) => p.id === id);

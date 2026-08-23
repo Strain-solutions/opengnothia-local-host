@@ -11,6 +11,7 @@ import {
   RECOMMENDED_MODEL_ID,
   providers,
   getProvider,
+  providerUsesCustomModels,
   modelSupportsThinking,
   modelSupportsAdaptiveThinking,
   modelRequiresAdaptiveThinking,
@@ -29,6 +30,7 @@ export function ApiSetupStep({ onNext, onBack }: ApiSetupStepProps) {
   const { t } = useTranslation();
   const {
     provider, setProvider, apiKey, setApiKey,
+    customBaseUrl, setCustomBaseUrl, customContextWindow, setCustomContextWindow,
     model, setModel, thinkingEnabled, setThinkingEnabled, thinkingLevel, setThinkingLevel,
     thinkingType, setThinkingType,
     memoryModel, setMemoryModel, memoryThinkingEnabled, setMemoryThinkingEnabled, memoryThinkingLevel, setMemoryThinkingLevel,
@@ -38,6 +40,7 @@ export function ApiSetupStep({ onNext, onBack }: ApiSetupStepProps) {
   const [testError, setTestError] = useState("");
 
   const currentProvider = getProvider(provider);
+  const usesCustomModels = providerUsesCustomModels(provider);
   const providerOptions = providers.map((p) => ({ value: p.id, label: p.name }));
   const modelOptions = currentProvider?.models.map((m) => ({
     value: m.id,
@@ -61,6 +64,7 @@ export function ApiSetupStep({ onNext, onBack }: ApiSetupStepProps) {
       provider,
       apiKey,
       model,
+      customBaseUrl: customBaseUrl || undefined,
     });
     if (result.success) {
       setTestStatus("success");
@@ -70,7 +74,9 @@ export function ApiSetupStep({ onNext, onBack }: ApiSetupStepProps) {
     }
   }
 
-  const canProceed = apiKey.length > 0 || !currentProvider?.requiresKey;
+  const canProceed = usesCustomModels
+    ? model.trim().length > 0
+    : apiKey.length > 0 || !currentProvider?.requiresKey;
 
   return (
     <div className="space-y-5">
@@ -90,6 +96,18 @@ export function ApiSetupStep({ onNext, onBack }: ApiSetupStepProps) {
           setTestStatus("idle");
         }}
       />
+
+      {usesCustomModels && (
+        <div>
+          <Input
+            label={t.settings.baseUrl}
+            value={customBaseUrl}
+            placeholder={currentProvider?.baseUrl}
+            onChange={(ev) => { setCustomBaseUrl(ev.target.value); setTestStatus("idle"); }}
+          />
+          <p className="text-xs text-[var(--text-muted)] mt-1">{t.settings.baseUrlDescription}</p>
+        </div>
+      )}
 
       {currentProvider?.requiresKey && (
         <>
@@ -143,6 +161,34 @@ export function ApiSetupStep({ onNext, onBack }: ApiSetupStepProps) {
         />
       )}
 
+      {usesCustomModels && (
+        <>
+          <div>
+            <Input
+              label={t.settings.customModelLabel}
+              value={model}
+              placeholder={t.settings.modelNamePlaceholder}
+              onChange={(ev) => { setModel(ev.target.value); setTestStatus("idle"); }}
+            />
+            <p className="text-xs text-[var(--text-muted)] mt-1">{t.settings.customModelDescription}</p>
+          </div>
+          <div>
+            <Input
+              label={t.settings.customContextWindow}
+              type="number"
+              min={1024}
+              step={1024}
+              value={customContextWindow}
+              onChange={(ev) => {
+                const parsed = Number(ev.target.value);
+                setCustomContextWindow(Number.isFinite(parsed) && parsed > 0 ? parsed : 0);
+              }}
+            />
+            <p className="text-xs text-[var(--text-muted)] mt-1">{t.settings.customContextWindowDescription}</p>
+          </div>
+        </>
+      )}
+
       {showThinkingToggle && (
         <div>
           <Toggle
@@ -194,6 +240,15 @@ export function ApiSetupStep({ onNext, onBack }: ApiSetupStepProps) {
           {t.onboarding.memoryModelOnboardingDescription}
         </p>
       </div>
+
+      {usesCustomModels && (
+        <Input
+          label={t.settings.customModelLabel}
+          value={memoryModel}
+          placeholder={t.settings.modelNamePlaceholder}
+          onChange={(ev) => setMemoryModel(ev.target.value)}
+        />
+      )}
 
       {modelOptions.length > 0 && (
         <Select
