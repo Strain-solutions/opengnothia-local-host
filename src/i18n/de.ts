@@ -527,6 +527,7 @@ export const de: Translations = {
     thinkingProcess: "Denkprozess",
     preparing: "Wird vorbereitet...",
     compacting: "Sitzung wird komprimiert...",
+    stopGenerating: "Stop generating",
     compactingDescription: "Der Gesprächsverlauf nähert sich dem Speicherlimit des Modells. Die Sitzung wird zusammengefasst, um Speicher freizugeben \u2014 deine Nachrichten bleiben erhalten und die Sitzung geht nahtlos weiter.",
   },
   closeGuard: {

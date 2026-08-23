@@ -1341,6 +1341,8 @@ export default function SessionPage() {
                 audioLevel={recorder.audioLevel}
                 onMicClick={handleMicClick}
                 onMicStop={handleMicStop}
+                isStreaming={session.isStreaming}
+                onStopStreaming={() => useSessionStore.getState().cancelStreaming()}
               />
               {recorder.error && (
                 <div className="px-4 -mt-3 pb-2">

@@ -527,6 +527,7 @@ export const en: Translations = {
     thinkingProcess: "Thought process",
     preparing: "Preparing...",
     compacting: "Compacting session...",
+    stopGenerating: "Stop generating",
     compactingDescription: "Conversation history is nearing model memory limit. The session is being summarized to free up memory — your messages will stay intact and the session will continue seamlessly.",
   },
   closeGuard: {

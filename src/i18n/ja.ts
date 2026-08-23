@@ -527,6 +527,7 @@ export const ja: Translations = {
     thinkingProcess: "思考プロセス",
     preparing: "準備中...",
     compacting: "セッションを圧縮中...",
+    stopGenerating: "Stop generating",
     compactingDescription: "会話履歴がモデルのメモリ上限に近づいています。メモリを確保するためセッションを要約中です。メッセージはそのまま保持され、セッションはスムーズに続きます。",
   },
   closeGuard: {

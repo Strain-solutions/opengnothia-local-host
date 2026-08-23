@@ -529,6 +529,7 @@ export interface Translations {
     thinkingProcess: string;
     preparing: string;
     compacting: string;
+    stopGenerating: string;
     compactingDescription: string;
   };
   closeGuard: {

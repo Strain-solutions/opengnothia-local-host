@@ -527,6 +527,7 @@ export const tr: Translations = {
     thinkingProcess: "Düşünce süreci",
     preparing: "Hazırlanıyor...",
     compacting: "Seans kompakt ediliyor...",
+    stopGenerating: "Üretimi durdur",
     compactingDescription: "Konuşma geçmişi model hafıza sınırına yaklaştı. Seans özetlenerek hafıza boşaltılıyor — mesajların aynen kalacak, seans kesintisiz devam edecek.",
   },
   closeGuard: {

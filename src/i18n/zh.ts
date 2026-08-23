@@ -527,6 +527,7 @@ export const zh: Translations = {
     thinkingProcess: "思考过程",
     preparing: "准备中...",
     compacting: "正在压缩会话...",
+    stopGenerating: "Stop generating",
     compactingDescription: "对话记录接近模型记忆上限。正在对会话进行摘要以释放空间——你的消息将保持完整，会话将无缝继续。",
   },
   closeGuard: {

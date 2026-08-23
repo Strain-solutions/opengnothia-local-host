@@ -11,6 +11,9 @@ interface ChatInputProps {
   audioLevel?: number;
   onMicClick?: () => void;
   onMicStop?: () => void;
+  /** True while the assistant is generating. Swaps Send for a cancel control. */
+  isStreaming?: boolean;
+  onStopStreaming?: () => void;
 }
 
 export interface ChatInputHandle {
@@ -99,7 +102,7 @@ export function RecordingTimer() {
 }
 
 export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
-  ({ onSend, disabled, recordingState = "idle", audioLevel = 0, onMicClick, onMicStop }, ref) => {
+  ({ onSend, disabled, recordingState = "idle", audioLevel = 0, onMicClick, onMicStop, isStreaming = false, onStopStreaming }, ref) => {
     const { t } = useTranslation();
     const [value, setValue] = useState("");
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -215,19 +218,31 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
                       <Mic className="w-4 h-4" />
                     )}
                   </button>
-                  {/* Send button */}
-                  <button
-                    onClick={handleSubmit}
-                    disabled={!value.trim() || disabled}
-                    className={cn(
-                      "w-8 h-8 rounded-full flex items-center justify-center transition-all",
-                      value.trim() && !disabled
-                        ? "bg-gradient-to-br from-primary-400 to-primary-600 text-white shadow-[0_0_14px_rgba(58,186,180,0.4)] hover:shadow-[0_0_20px_rgba(58,186,180,0.6)] hover:from-primary-300 hover:to-primary-500"
-                        : "text-[var(--text-muted)]"
-                    )}
-                  >
-                    <Send className="w-4 h-4" />
-                  </button>
+                  {/* Send button, or stop while the assistant is generating.
+                      Local models can take a long time, so being able to cancel matters. */}
+                  {isStreaming && onStopStreaming ? (
+                    <button
+                      onClick={onStopStreaming}
+                      title={t.chat.stopGenerating}
+                      aria-label={t.chat.stopGenerating}
+                      className="w-8 h-8 rounded-full flex items-center justify-center transition-all bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] hover:border-red-500/60 hover:text-red-400"
+                    >
+                      <Square className="w-3.5 h-3.5 fill-current" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleSubmit}
+                      disabled={!value.trim() || disabled}
+                      className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                        value.trim() && !disabled
+                          ? "bg-gradient-to-br from-primary-400 to-primary-600 text-white shadow-[0_0_14px_rgba(58,186,180,0.4)] hover:shadow-[0_0_20px_rgba(58,186,180,0.6)] hover:from-primary-300 hover:to-primary-500"
+                          : "text-[var(--text-muted)]"
+                      )}
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </>
             )}
