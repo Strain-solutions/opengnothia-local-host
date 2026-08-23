@@ -11,12 +11,17 @@ import { AIError } from "./AIError";
  * OLLAMA_ORIGINS configuration and no restart. Allowed hosts are scoped in
  * src-tauri/capabilities/default.json.
  *
- * Consequence: the plugin does not signal cancellation the way the browser does. Instead of a
- * DOMException named "AbortError" it throws `new Error("Request cancelled")`, and the stream
- * controller is errored with that same value as a *raw string*. Both must be recognised here,
- * or pressing stop shows the user a spurious error.
+ * Consequence: the plugin does not signal cancellation the way the browser does, and it does
+ * not do so consistently either. Aborting before send throws `Error("Request cancelled")`;
+ * aborting mid-stream rejects the in-flight `fetch_read_body` invoke with a Rust-side error
+ * whose text is an implementation detail. Matching on message text was tried and produced a
+ * spurious "server not responding" dialog on every press of stop.
+ *
+ * So don't inspect the error at all: if the caller's own signal is aborted, this is a user
+ * cancellation by definition. The message checks remain only for a browser-fetch fallback.
  */
-function isAbortError(err: unknown): boolean {
+function isAbortError(err: unknown, signal?: AbortSignal): boolean {
+  if (signal?.aborted) return true;
   if (err instanceof DOMException && err.name === "AbortError") return true;
   if (typeof err === "string") return err === "Request cancelled";
   if (err instanceof Error) return err.message === "Request cancelled";
@@ -174,13 +179,17 @@ export async function streamMessage(params: {
       }
     }
 
+    // An abort can end the read loop cleanly rather than by rejecting; in that case the
+    // caller has already tidied up, so don't report a normal completion over the top of it.
+    if (params.abortSignal?.aborted) return;
+
     // If we reach here without a "done" event, still signal completion
     if (hasUsage) {
       params.onUsage?.(usageAccumulator);
     }
     params.onDone();
   } catch (err) {
-    if (isAbortError(err)) {
+    if (isAbortError(err, params.abortSignal)) {
       // User cancelled — don't call onError
       return;
     }
