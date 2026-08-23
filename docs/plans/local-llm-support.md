@@ -465,8 +465,10 @@ Still outstanding:
 - [ ] **Regression: OpenAI and Anthropic sessions still work**, and pre-existing stored settings
       load unchanged. Highest priority — all AI traffic moved onto plugin fetch.
 - [ ] Stop button mid-stream shows **no** error modal (the abort fix; was broken before it was
-      caught in the spike, and is the change most likely to regress cloud providers).
-- [ ] Compaction firing at 80% — force it by setting a small context window.
+      caught in the spike, and is the change most likely to regress cloud providers). Note the
+      therapy chat had **no** stop control at all until it was added in a follow-up commit —
+      `cancelStreaming()` existed but nothing called it.
+- [x] Compaction fires at 80% — observed triggering at ~6K of an 8192 window.
 - [ ] Wi-Fi off mid-session changes nothing.
 
 ### Field note: context window vs. Ollama's real `num_ctx`
