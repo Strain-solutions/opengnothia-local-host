@@ -463,13 +463,30 @@ Confirmed by manual testing:
 Still outstanding:
 
 - [ ] **Regression: OpenAI and Anthropic sessions still work**, and pre-existing stored settings
-      load unchanged. Highest priority — all AI traffic moved onto plugin fetch.
+      load unchanged. Highest priority — all AI traffic moved onto plugin fetch. **Blocked: no
+      API keys available for either provider** (both are subscriptions), so this cannot be
+      exercised on this machine yet.
+
+      Residual risk assessment, since this may stay open for a while:
+      - Request *construction* for both cloud providers is unchanged except two intended edits
+        (Anthropic honouring `customBaseUrl`, and dropping the now-unnecessary
+        `anthropic-dangerous-direct-browser-access` header).
+      - SSE *parsing* is transport-agnostic and untouched, including Anthropic's `event:`-line
+        format and OpenAI's Responses API events.
+      - The transport itself is proven to stream correctly and to handle chunk boundaries
+        (measured against Ollama: 134 incremental chunks).
+      - What genuinely remains unverified: that the capability scope admits `api.openai.com`
+        and `api.anthropic.com` in practice, and that each provider's real SSE stream parses
+        end to end through the plugin.
+      - The first of those **is testable without a valid key** — a bogus key returning HTTP 401
+        proves scope + transport, whereas a scope rejection produces a different failure
+        entirely. Worth doing before assuming the cloud path is fine.
 - [ ] Stop button mid-stream shows **no** error modal (the abort fix; was broken before it was
       caught in the spike, and is the change most likely to regress cloud providers). Note the
       therapy chat had **no** stop control at all until it was added in a follow-up commit —
       `cancelStreaming()` existed but nothing called it.
 - [x] Compaction fires at 80% — observed triggering at ~6K of an 8192 window.
-- [ ] Wi-Fi off mid-session changes nothing.
+- [x] **Wi-Fi off — chat sessions work normally.** The privacy claim is proven end to end.
 
 ### Field note: context window vs. Ollama's real `num_ctx`
 
