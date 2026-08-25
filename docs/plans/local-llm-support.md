@@ -484,6 +484,35 @@ Still outstanding:
       is no test framework in this repo; if one is ever added, those assertions are worth
       keeping as a regression suite for adapter parsing.
 
+### Field note: keeping the model loaded (`keep_alive`)
+
+Ollama unloads an idle model after ~5 minutes. Reloading a large model costs several seconds,
+and the natural pauses in a therapy session — thinking, typing — routinely exceed that, so the
+wait lands exactly when the user has just finished composing something difficult. A
+**Keep model loaded** setting was added for local providers (default 30 minutes).
+
+Two constraints found by testing against Ollama 0.32. Both are easy to get wrong by assumption,
+and neither fails loudly:
+
+1. **The OpenAI-compatible `/v1` endpoint silently ignores `keep_alive`.** Sending it in the
+   chat body produces no error and no effect. Only the native `/api/chat` and `/api/generate`
+   honour it. Verified: a `/v1` request with `keep_alive: "30m"` still left `ollama ps` showing
+   ~4 minutes, whereas `/api/chat` with `keep_alive: "40m"` gave 39 minutes.
+2. **Every `/v1` request resets the timer** to the server default, so the refresh must run
+   *after* a completed response. Firing it before is pointless — it gets overwritten.
+
+`POST /api/chat` with `{model, keep_alive, messages: []}` returns instantly with
+`done_reason: "load"`, generating no tokens. That is the mechanism used.
+
+Implemented in `src/services/ai/ollamaKeepAlive.ts`, invoked from `aiService` at the stream and
+non-stream completion points so all call sites are covered from one place. Fire-and-forget:
+never awaited, all failures swallowed. Non-Ollama servers (LM Studio, llama.cpp, vLLM) 404 on
+`/api/chat` and simply don't get the optimisation.
+
+**Verified working** in a release build: the setting takes effect and the model stays resident.
+To re-check after changes, set it to 30 minutes, send one message, and confirm `ollama ps`
+reports ~29 minutes rather than ~4.
+
 ### Field note: context window vs. Ollama's real `num_ctx`
 
 Testing used `gemma4` with the app's context window set to 80000. `ollama ps` reported the
