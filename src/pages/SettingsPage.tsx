@@ -44,6 +44,9 @@ import {
 } from "@/services/data/dataPortService";
 import type { AIProvider, Language, SessionMode, TherapySchool, ThinkingLevel, ThinkingType, TTSModel, TTSVoice } from "@/types";
 
+// 0 = leave to the server, -1 = until Ollama exits.
+const KEEP_ALIVE_OPTIONS = [0, 15, 30, 60, 120, -1];
+
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { setOnboarded, setLocked, lockEnabled, setLockEnabled: setLockEnabledGlobal } = useAppStore();
@@ -171,6 +174,7 @@ export default function SettingsPage() {
     await store.set("model", settings.model);
     await store.set("customBaseUrl", settings.customBaseUrl);
     await store.set("customContextWindow", settings.customContextWindow);
+    await store.set("localKeepAliveMinutes", settings.localKeepAliveMinutes);
     await store.set("theme", theme);
     await store.set("thinkingEnabled", settings.thinkingEnabled);
     await store.set("thinkingLevel", settings.thinkingLevel);
@@ -345,6 +349,7 @@ export default function SettingsPage() {
     await store.set("model", DEFAULT_MODEL_ID);
     await store.set("customBaseUrl", "");
     await store.set("customContextWindow", 8192);
+    await store.set("localKeepAliveMinutes", 30);
     await store.set("language", "tr");
     await store.set("therapySchool", RECOMMENDED_SCHOOL_ID);
     await store.set("thinkingEnabled", true);
@@ -378,6 +383,7 @@ export default function SettingsPage() {
       model: DEFAULT_MODEL_ID,
       customBaseUrl: "",
       customContextWindow: 8192,
+      localKeepAliveMinutes: 30,
       therapySchool: RECOMMENDED_SCHOOL_ID as TherapySchool,
       thinkingEnabled: true,
       thinkingLevel: "medium" as ThinkingLevel,
@@ -581,6 +587,29 @@ export default function SettingsPage() {
                     {t.settings.localPrivacyNote}
                   </p>
                 )}
+              </div>
+
+              <div>
+                <Select
+                  label={t.settings.keepAlive}
+                  options={KEEP_ALIVE_OPTIONS.map((m) => ({
+                    value: String(m),
+                    label:
+                      m === 0
+                        ? t.settings.keepAliveServerDefault
+                        : m === -1
+                          ? t.settings.keepAliveForever
+                          : t.settings.keepAliveMinutes.replace("{n}", String(m)),
+                  }))}
+                  value={String(settings.localKeepAliveMinutes)}
+                  onChange={(e) => settings.setLocalKeepAliveMinutes(Number(e.target.value))}
+                />
+                <p className="text-xs text-[var(--text-muted)] mt-1">
+                  {t.settings.keepAliveDescription}
+                </p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">
+                  {t.settings.keepAliveOllamaOnly}
+                </p>
               </div>
 
               <div className="flex items-center gap-3">

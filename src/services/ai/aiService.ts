@@ -4,6 +4,22 @@ import { getAdapter } from "./providers";
 import { getCurrentLanguage, getTranslation } from "@/i18n";
 import { TEST_MESSAGE, TEST_SYSTEM_PROMPT } from "./promptBuilder";
 import { AIError } from "./AIError";
+import { touchKeepAlive } from "./ollamaKeepAlive";
+import { useSettingsStore } from "@/stores/useSettingsStore";
+import { DEFAULT_LOCAL_BASE_URL } from "./providers";
+
+/**
+ * Refresh the local model's idle timer after a completed response.
+ *
+ * Read from the settings store rather than threading a new parameter through every one of the
+ * ~20 call sites; this keeps the change in one place. Deliberately not awaited — it must never
+ * delay or fail a response.
+ */
+function refreshLocalKeepAlive(provider: AIProvider, model: string, customBaseUrl?: string): void {
+  if (provider !== "local") return;
+  const minutes = useSettingsStore.getState().localKeepAliveMinutes;
+  void touchKeepAlive(customBaseUrl || DEFAULT_LOCAL_BASE_URL, model, minutes);
+}
 
 /**
  * AI requests go through tauri-plugin-http (Rust) rather than the webview's fetch.
@@ -50,6 +66,7 @@ export async function sendMessage(params: {
   }
 
   const data = await response.json();
+  refreshLocalKeepAlive(params.provider, params.model, params.customBaseUrl);
   return adapter.parseResponse(data);
 }
 
@@ -154,10 +171,12 @@ export async function streamMessage(params: {
                 if (hasUsage) {
                   params.onUsage?.(usageAccumulator);
                 }
+                refreshLocalKeepAlive(params.provider, params.model, params.customBaseUrl);
                 params.onDone();
                 return;
               case "done_with_usage":
                 params.onUsage?.(chunk.usage);
+                refreshLocalKeepAlive(params.provider, params.model, params.customBaseUrl);
                 params.onDone();
                 return;
               case "usage_delta":
@@ -187,6 +206,7 @@ export async function streamMessage(params: {
     if (hasUsage) {
       params.onUsage?.(usageAccumulator);
     }
+    refreshLocalKeepAlive(params.provider, params.model, params.customBaseUrl);
     params.onDone();
   } catch (err) {
     if (isAbortError(err, params.abortSignal)) {

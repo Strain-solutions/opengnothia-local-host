@@ -54,6 +54,7 @@ function AppContent() {
         const model = await store.get<string>("model");
         const customBaseUrl = await store.get<string>("customBaseUrl");
         const customContextWindow = await store.get<number>("customContextWindow");
+        const localKeepAliveMinutes = await store.get<number>("localKeepAliveMinutes");
         const therapySchool = await store.get<string>("therapySchool");
         const thinkingEnabled = await store.get<boolean>("thinkingEnabled");
         const thinkingLevel = await store.get<string>("thinkingLevel");
@@ -114,6 +115,7 @@ function AppContent() {
           ...(model && { model }),
           ...(customBaseUrl && { customBaseUrl }),
           ...(customContextWindow != null && { customContextWindow }),
+          ...(localKeepAliveMinutes != null && { localKeepAliveMinutes }),
           ...(therapySchool && { therapySchool: therapySchool as any }),
           ...(thinkingEnabled != null && { thinkingEnabled }),
           ...(thinkingLevel && { thinkingLevel: thinkingLevel as any }),

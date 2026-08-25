@@ -10,6 +10,8 @@ interface SettingsState {
   customBaseUrl: string;
   /** Context window for user-entered models (local/OpenAI-compatible), which aren't in the static model table. */
   customContextWindow: number;
+  /** Minutes to keep a local model resident. 0 = server default, -1 = until Ollama exits. */
+  localKeepAliveMinutes: number;
   approach: Approach;
   preferredSessionTime: string;
   sessionDurationMinutes: number;
@@ -34,6 +36,7 @@ interface SettingsState {
   setModel: (model: string) => void;
   setCustomBaseUrl: (url: string) => void;
   setCustomContextWindow: (tokens: number) => void;
+  setLocalKeepAliveMinutes: (minutes: number) => void;
   setApproach: (approach: Approach) => void;
   setPreferredSessionTime: (time: string) => void;
   setSessionDurationMinutes: (minutes: number) => void;
@@ -59,6 +62,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   model: DEFAULT_MODEL_ID,
   customBaseUrl: "",
   customContextWindow: 8192,
+  localKeepAliveMinutes: 30,
   approach: "balanced",
   preferredSessionTime: "20:00",
   sessionDurationMinutes: 50,
@@ -143,6 +147,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   setModel: (model) => set({ model }),
   setCustomBaseUrl: (customBaseUrl) => set({ customBaseUrl }),
   setCustomContextWindow: (customContextWindow) => set({ customContextWindow }),
+  setLocalKeepAliveMinutes: (localKeepAliveMinutes) => set({ localKeepAliveMinutes }),
   setApproach: (approach) => set({ approach }),
   setPreferredSessionTime: (preferredSessionTime) => set({ preferredSessionTime }),
   setSessionDurationMinutes: (sessionDurationMinutes) => set({ sessionDurationMinutes }),

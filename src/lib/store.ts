@@ -12,6 +12,7 @@ const STORE_DEFAULTS = {
   model: DEFAULT_MODEL_ID,
   customBaseUrl: "",
   customContextWindow: 8192,
+  localKeepAliveMinutes: 30,
   theme: "system",
   therapySchool: "integrative",
   thinkingEnabled: false,

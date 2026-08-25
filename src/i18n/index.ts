@@ -347,6 +347,12 @@ export interface Translations {
     customModelLabel: string;
     customModelDescription: string;
     customContextWindow: string;
+    keepAlive: string;
+    keepAliveDescription: string;
+    keepAliveServerDefault: string;
+    keepAliveForever: string;
+    keepAliveMinutes: string;
+    keepAliveOllamaOnly: string;
     customContextWindowDescription: string;
     localPrivacyNote: string;
     localVoiceUnavailable: string;
