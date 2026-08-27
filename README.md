@@ -86,6 +86,14 @@ In **Settings → AI** (or during onboarding):
 
 No API key is required. Hit **Test connection** — green means you're done.
 
+<div align="center">
+  <img src="assets/screenshots/local_provider.png" alt="Settings — AI Connection with the Local provider selected" width="700" />
+  <br /><sub><b>Settings → AI</b> — choose the local provider, point it at your server, and confirm it answers.</sub>
+  <br /><br />
+  <img src="assets/screenshots/model_settings.png" alt="Settings — model name and context window fields" width="700" />
+  <br /><sub><b>Model settings</b> — type the model name your server reports, and declare its context window.</sub>
+</div>
+
 ### 3. About that context window
 
 Ollama defaults to a **4096-token** context unless `num_ctx` is configured on the model, regardless of what the model itself supports. Set the app's context window to match what your server will actually honour, not what the model's card advertises. If you set it too high, the server truncates silently; too low and the app compacts more often than it needs to.
