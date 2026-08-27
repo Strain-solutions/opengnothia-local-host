@@ -15,7 +15,7 @@
 
 This is **not** the main project. It is a fork of [Lepuz-coder/opengnothia](https://github.com/Lepuz-coder/opengnothia) (forked at `v1.8.1`) that exists to fill exactly one gap: running the app against a **local LLM**.
 
-> **If upstream adds local model support, use upstream.** This fork exists only to fill that gap, and it will not try to compete with the original on anything else.
+> **If upstream adds local model support, use upstream.** This fork exists only to fill that gap, and not to compete with the original.
 
 Everything else — the therapy schools, journal, dream analysis, insights, mood tracking, breathing exercises, courses, the whole UI — is upstream's work. Read the [upstream README](docs/UPSTREAM_README.md) for the full feature tour and screenshots. Bug reports about anything other than local-model support belong [upstream](https://github.com/Lepuz-coder/opengnothia/issues).
 
@@ -23,9 +23,11 @@ Everything else — the therapy schools, journal, dream analysis, insights, mood
 
 ## Why this fork exists
 
-Upstream promises "your data never leaves your device," and that is true of your *storage* — sessions, journals, and insights all live in local SQLite. But every therapy message still streams to OpenAI or Anthropic. For the most personal conversations you'll ever type, that's the one gap worth closing.
+Upstream promises "your data never leaves your device," and that is true of your *storage* — sessions, journals, and insights all live in local SQLite. But every therapy message still streams to OpenAI or Anthropic. For some (most) people that is not an issue, but for some (like me) it might be.
 
-This fork closes it. Point the app at Ollama (or any OpenAI-compatible server) and the entire session — prompt, transcript, summaries, insights — stays on your machine. You can pull the network cable mid-session and keep going.
+Point the app at Ollama (or any OpenAI-compatible server) and the entire session — prompt, transcript, summaries, insights — stays on your machine no wifi / internet access required.
+
+Essentially this is a long-winded way of saying there is an additional dropdown in the settings menu.
 
 ---
 
@@ -53,7 +55,7 @@ Cloud providers behave exactly as they did upstream. Existing OpenAI and Anthrop
 
 Speech-to-text and text-to-speech still require OpenAI — there is no local STT/TTS path in this build. Leaving voice enabled would mean your spoken therapy sessions were uploaded as audio to a third party while the app told you nothing was leaving your device. That's a worse privacy failure than the one this fork set out to fix, so voice mode is blocked instead: the mode selector greys it out, and a stored "voice" preference falls back to chat when you switch to a local provider.
 
-If you select a cloud provider, upstream's voice mode is still there and still routes audio to OpenAI. **Privacy guarantee applies to the local provider only.**
+If you select a cloud provider, upstream's voice mode is still there and still routes audio to OpenAI. **Privacy  applies to the local provider only.**
 
 ---
 
