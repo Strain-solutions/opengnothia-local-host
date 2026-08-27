@@ -23,11 +23,10 @@ Everything else — the therapy schools, journal, dream analysis, insights, mood
 
 ## Why this fork exists
 
-Upstream promises "your data never leaves your device," and that is true of your *storage* — sessions, journals, and insights all live in local SQLite. But every therapy message still streams to OpenAI or Anthropic. For some (most) people that is not an issue, but for some (like me) it might be.
+I was not happy with every therapy message being streamed to OpenAI or Anthropic. For some (most) people that is not an issue, but for some it might be.
 
 Point the app at Ollama (or any OpenAI-compatible server) and the entire session — prompt, transcript, summaries, insights — stays on your machine no wifi / internet access required.
 
-Essentially this is a long-winded way of saying there is an additional dropdown in the settings menu.
 
 ---
 
