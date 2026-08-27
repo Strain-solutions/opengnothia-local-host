@@ -52,7 +52,7 @@ Cloud providers behave exactly as they did upstream. Existing OpenAI and Anthrop
 
 **Voice chat is turned off whenever a local provider is selected**, and the UI says why rather than failing quietly.
 
-Speech-to-text and text-to-speech still require OpenAI — there is no local STT/TTS path in this build. Leaving voice enabled would mean your spoken therapy sessions were uploaded as audio to a third party while the app told you nothing was leaving your device. That's a worse privacy failure than the one this fork set out to fix, so voice mode is blocked instead: the mode selector greys it out, and a stored "voice" preference falls back to chat when you switch to a local provider.
+Speech-to-text and text-to-speech still require OpenAI — there is no local STT/TTS path in this build. Leaving voice enabled would mean your spoken therapy sessions were uploaded as audio to a third party so voice mode is blocked instead: the mode selector greys it out, and a stored "voice" preference falls back to chat when you switch to a local provider.
 
 If you select a cloud provider, upstream's voice mode is still there and still routes audio to OpenAI. **Privacy  applies to the local provider only.**
 
