@@ -1,12 +1,12 @@
 <div align="center">
-  <img src="src/assets/logo.svg" alt="OpenGnothia Logo" width="120" />
+  <img src="../src/assets/logo.svg" alt="OpenGnothia Logo" width="120" />
   <h1>OpenGnothia</h1>
   <p><strong><em>"Gnôthi Seautón" — Know Thyself</em></strong></p>
   <p>An AI-powered, privacy-first self-therapy desktop application that helps you explore your inner world through therapy sessions, journaling, dream analysis, and more.</p>
 
   <br />
 
-  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../LICENSE)
   [![Version](https://img.shields.io/badge/version-1.6.0-green.svg)](https://github.com/Lepuz-coder/opengnothia/releases)
   [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey.svg)](#getting-started)
   [![Made with Tauri](https://img.shields.io/badge/Made%20with-Tauri%202-FFC131?logo=tauri&logoColor=white)](https://v2.tauri.app)
@@ -41,27 +41,27 @@ Mental health support should be accessible, private, and personalized. OpenGnoth
 <div align="center">
   <table>
     <tr>
-      <td colspan="2" align="center"><img src="assets/screenshots/sessions_on.png" alt="Live Therapy Session" width="600" /><br /><sub><b>Live Therapy Session</b></sub></td>
+      <td colspan="2" align="center"><img src="../assets/screenshots/sessions_on.png" alt="Live Therapy Session" width="600" /><br /><sub><b>Live Therapy Session</b></sub></td>
     </tr>
     <tr>
-      <td align="center"><img src="assets/screenshots/dashboard.png" alt="Dashboard" width="400" /><br /><sub><b>Dashboard</b></sub></td>
-      <td align="center"><img src="assets/screenshots/sessions_page.png" alt="AI Therapy Session" width="400" /><br /><sub><b>AI Therapy Sessions</b></sub></td>
+      <td align="center"><img src="../assets/screenshots/dashboard.png" alt="Dashboard" width="400" /><br /><sub><b>Dashboard</b></sub></td>
+      <td align="center"><img src="../assets/screenshots/sessions_page.png" alt="AI Therapy Session" width="400" /><br /><sub><b>AI Therapy Sessions</b></sub></td>
     </tr>
     <tr>
-      <td align="center"><img src="assets/screenshots/analyses_page.png" alt="Analyses" width="400" /><br /><sub><b>Analyses</b></sub></td>
-      <td align="center"><img src="assets/screenshots/insights_page.png" alt="AI Insights" width="400" /><br /><sub><b>AI-Generated Insights</b></sub></td>
+      <td align="center"><img src="../assets/screenshots/analyses_page.png" alt="Analyses" width="400" /><br /><sub><b>Analyses</b></sub></td>
+      <td align="center"><img src="../assets/screenshots/insights_page.png" alt="AI Insights" width="400" /><br /><sub><b>AI-Generated Insights</b></sub></td>
     </tr>
     <tr>
-      <td align="center"><img src="assets/screenshots/dreams_page.png" alt="Dream Analysis" width="400" /><br /><sub><b>Dream Analysis</b></sub></td>
-      <td align="center"><img src="assets/screenshots/schools_page.png" alt="Therapy Schools" width="400" /><br /><sub><b>Therapy Schools</b></sub></td>
+      <td align="center"><img src="../assets/screenshots/dreams_page.png" alt="Dream Analysis" width="400" /><br /><sub><b>Dream Analysis</b></sub></td>
+      <td align="center"><img src="../assets/screenshots/schools_page.png" alt="Therapy Schools" width="400" /><br /><sub><b>Therapy Schools</b></sub></td>
     </tr>
     <tr>
-      <td align="center"><img src="assets/screenshots/courses_page.png" alt="Therapy Programs" width="400" /><br /><sub><b>Therapy Programs</b></sub></td>
-      <td align="center"><img src="assets/screenshots/breathing_page.png" alt="Breathing Exercises" width="400" /><br /><sub><b>Breathing Exercises</b></sub></td>
+      <td align="center"><img src="../assets/screenshots/courses_page.png" alt="Therapy Programs" width="400" /><br /><sub><b>Therapy Programs</b></sub></td>
+      <td align="center"><img src="../assets/screenshots/breathing_page.png" alt="Breathing Exercises" width="400" /><br /><sub><b>Breathing Exercises</b></sub></td>
     </tr>
     <tr>
-      <td align="center"><img src="assets/screenshots/expenses_page.png" alt="Expenses" width="400" /><br /><sub><b>Expenses</b></sub></td>
-      <td align="center"><img src="assets/screenshots/settings_page.png" alt="Settings" width="400" /><br /><sub><b>Settings</b></sub></td>
+      <td align="center"><img src="../assets/screenshots/expenses_page.png" alt="Expenses" width="400" /><br /><sub><b>Expenses</b></sub></td>
+      <td align="center"><img src="../assets/screenshots/settings_page.png" alt="Settings" width="400" /><br /><sub><b>Settings</b></sub></td>
     </tr>
   </table>
 </div>
@@ -284,7 +284,7 @@ Contributions are welcome! Whether it's a bug fix, new feature, translation, or 
 
 ## License
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License** — see the [LICENSE](../LICENSE) file for details.
 
 ---
 
